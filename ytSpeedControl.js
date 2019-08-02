@@ -2,7 +2,7 @@
 // @name        ytSpeedControl
 // @namespace   https://github.com/rmv125
 // @include     https://www.youtube.com/watch?*
-// @version     2
+// @version     2.1
 // @grant       none
 // ==/UserScript==
 
@@ -61,15 +61,23 @@ function init() {
     indicator.innerHTML = value.toFixed(2);
   };
 
+  let threshold = 0;
+
   button.addEventListener('wheel', e => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.deltaY < 0) {
-      speedController.speedUp();
-    } else {
-      speedController.slowDown();
+
+    threshold += Math.abs(e.wheelDeltaY);
+
+    if (threshold > 100) {
+      threshold = 0;
+      if (e.deltaY < 0) {
+        speedController.speedUp();
+      } else {
+        speedController.slowDown();
+      }
+      updateContent(speedController.speed);
     }
-    updateContent(speedController.speed);
   });
 
   button.addEventListener('click', e => {
