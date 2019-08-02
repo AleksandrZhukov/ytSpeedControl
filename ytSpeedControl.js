@@ -2,7 +2,7 @@
 // @name        ytSpeedControl
 // @namespace   https://github.com/rmv125
 // @include     https://www.youtube.com/watch?*
-// @version     2.1
+// @version     2.2
 // @grant       none
 // ==/UserScript==
 
@@ -10,6 +10,10 @@ const CHANGE_STEP = 0.05;
 const MIN_VALUE = 1;
 const MAX_VALUE = 3;
 const LS_KEY = 'userscriptYtSpeedControl';
+
+const SPEED_UP_KEY = 'KeyD';
+const SLOW_DOWN_KEY = 'KeyA';
+const RESET_KEY = 'KeyS';
 
 class SpeedController {
   constructor(video) {
@@ -87,6 +91,25 @@ function init() {
     updateContent(speedController.speed);
   });
 
+  document.addEventListener('keydown', function(event) {
+    if (event.target.contentEditable !== 'true') {
+      switch (event.code) {
+        case SPEED_UP_KEY: {
+          speedController.speedUp();
+          return updateContent(speedController.speed);
+        }
+        case SLOW_DOWN_KEY: {
+          speedController.slowDown();
+          return updateContent(speedController.speed);
+        }
+        case RESET_KEY: {
+          speedController.resetSpeed();
+          return updateContent(speedController.speed);
+        }
+      }
+    }
+  });
+
   updateContent(speedController.speed);
 }
 
@@ -107,7 +130,9 @@ function injectButton() {
   indicator.className = 'speed-indicator';
   button.appendChild(icon);
   button.appendChild(indicator);
-  document.querySelector('.ytp-left-controls').insertBefore(button, document.querySelector('.ytp-next-button'));
+  document
+    .querySelector('.ytp-left-controls')
+    .insertBefore(button, document.querySelector('.ytp-next-button'));
   return { button, indicator, icon };
 }
 
