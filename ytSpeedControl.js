@@ -2,7 +2,7 @@
 // @name        ytSpeedControl
 // @namespace   https://github.com/rmv125
 // @include     https://www.youtube.com/watch?*
-// @version     2.2
+// @version     2.3
 // @grant       none
 // ==/UserScript==
 
@@ -14,6 +14,9 @@ const LS_KEY = 'userscriptYtSpeedControl';
 const SPEED_UP_KEY = 'KeyD';
 const SLOW_DOWN_KEY = 'KeyA';
 const RESET_KEY = 'KeyS';
+const ARROW_LEFT = 'ArrowLeft';
+const ARROW_RIGHT = 'ArrowRight';
+const CHAPTERS_DATA_PATH = ytInitialData.contents.twoColumnWatchNextResults.results.results.contents[1].videoSecondaryInfoRenderer.description.runs.filter(i => i.navigationEndpoint && i.navigationEndpoint.watchEndpoint && Number.isInteger(i.navigationEndpoint.watchEndpoint.startTimeSeconds));
 
 class SpeedController {
   constructor(video) {
@@ -52,6 +55,10 @@ class SpeedController {
     this.speed = speed;
     this.video.playbackRate = speed;
     localStorage.setItem(LS_KEY, speed);
+  }
+
+  setTime(time) {
+    this.video.currentTime = time;
   }
 }
 
@@ -106,12 +113,54 @@ function init() {
           speedController.resetSpeed();
           return updateContent(speedController.speed);
         }
+        case ARROW_LEFT:
+        case ARROW_RIGHT: {
+          return handleChapterChange(event, speedController);
+        }
       }
     }
   });
 
   updateContent(speedController.speed);
 }
+
+const getPreviousChapterTime = (currentTime) => {
+  if (currentTime < 5) return 0;
+
+  const chapters = CHAPTERS_DATA_PATH;
+  const index = chapters.findIndex(c => c.navigationEndpoint.watchEndpoint.startTimeSeconds > currentTime) - 1;
+
+  if (index === 0) return chapters[index];
+
+  if (currentTime - chapters[index].navigationEndpoint.watchEndpoint.startTimeSeconds < 5) {
+    return chapters[index - 1].navigationEndpoint.watchEndpoint.startTimeSeconds;
+  }
+
+  return chapters[index].navigationEndpoint.watchEndpoint.startTimeSeconds;
+};
+
+const getNextChapterTime = (currentTime) => {
+  const chapters = CHAPTERS_DATA_PATH;
+
+  const index = chapters.findIndex(c => c.navigationEndpoint.watchEndpoint.startTimeSeconds > currentTime);
+
+  return chapters[index].navigationEndpoint.watchEndpoint.startTimeSeconds;
+};
+
+const handleChapterChange = (event, speedController) => {
+  if (!event.altKey || !CHAPTERS_DATA_PATH.length) return;
+
+  const currentTime = speedController.video.getCurrentTime();
+  let nextTime = null;
+
+  if (event.code === ARROW_LEFT) {
+    nextTime = getPreviousChapterTime(currentTime);
+  } else {
+    nextTime = getNextChapterTime(currentTime);
+  }
+
+  speedController.setTime(nextTime);
+};
 
 const iconContent = value => {
   const rotate = ((value - MIN_VALUE) / (MAX_VALUE - MIN_VALUE)) * 188; // 188 - max rotate
